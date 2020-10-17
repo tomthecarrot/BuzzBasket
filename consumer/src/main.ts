@@ -13,7 +13,7 @@ const tw = twilio(twilioAccountSid, twilioAuthToken);
 const exp = express();
 exp.use(express.json());
 
-exp.listen(PORT, () => {
+exp.listen(PORT, '0.0.0.0', 0, () => {
     console.log(`Server is listening on port ${PORT}`);
 });
 
