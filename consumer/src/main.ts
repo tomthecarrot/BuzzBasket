@@ -4,6 +4,7 @@
 
 import express from 'express';
 import twilio from 'twilio';
+import axios from 'axios';
 import firebase from 'firebase';
 import {
     PORT, defaultRecipient, merchantName,
@@ -11,7 +12,7 @@ import {
     phraseInputs, phraseOutputs
 } from './config/constants';
 
-var currentItemName: string = "nothing";
+var currentItemNames: Map<string, string> = new Map<string, string>();
 
 // Firebase
 var firebaseConfig = {
@@ -86,8 +87,10 @@ exp.get('/postData', (req, res) => {
 });
 
 exp.post('/sms', (req, res) => {
+    console.log(req.body);
+    const phoneNumber: string = "-1";
     const inbound = req.body.Body;
-    const outbound = buzzParse(inbound);
+    const outbound = buzzParse(phoneNumber, inbound);
     const response = new MessagingResponse();
     const message = response.message();
     message.body(outbound);
@@ -97,7 +100,10 @@ exp.post('/sms', (req, res) => {
 
 exp.post('/voice', (req, res) => {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'alice' }, `Thanks for calling BuzzBasket! Please text us to order something new from ${merchantName}. We're also working on your order for ${currentItemName}. Have a great day.`);
+    const phoneNumber: string = "-1";
+    const currentItemName: string|undefined = currentItemNames.get(phoneNumber);
+    const orderStatusMsg: string = currentItemName == undefined ? "" : `We're also working on your order for ${currentItemName}.`;
+    twiml.say({ voice: 'alice' }, `Thanks for calling BuzzBasket! Please text us to order something new from ${merchantName}. ${orderStatusMsg} Have a great day.`);
     
     // res.type('text/xml');
     res.send(twiml.toString());
@@ -109,8 +115,10 @@ exp.get('/order*', (req, res) => {
         res.send("Please add an item name to order.");
         return;
     }
-    res.send(`Ordered ${itemName}! Sending a confirmation text message...`);
 
+    order("0", itemName);
+
+    res.send(`Ordered ${itemName}! Sending a confirmation text message...`);
     buzzSendConf(itemName);
 });
 
@@ -126,7 +134,7 @@ function buzzSendConf(itemName: string): void {
     });
 }
 
-function buzzParse(inbound: string): string {
+function buzzParse(phoneNumber: string, inbound: string): string {
     var name: string[] = [];
     var naming: boolean = false;
     var mainDirective: string|undefined = undefined;
@@ -153,7 +161,7 @@ function buzzParse(inbound: string): string {
 
     if (mainDirective == "order") {
         const nameStr: string = name.join(' ');
-        currentItemName = nameStr;
+        order(phoneNumber, nameStr);
         return `Ordering ${nameStr}.`;
     }
 
@@ -165,6 +173,13 @@ function buzzParse(inbound: string): string {
     }
     
     return `You said ${inbound}`; // echo
+}
+
+function order(phoneNumber: string, itemName: string): void {
+    currentItemNames.set(phoneNumber, itemName);
+    axios.post("http://localhost:3000/order", {
+        itemId: itemName
+    });
 }
 
 function shuffle(array: String[]) {
