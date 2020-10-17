@@ -38,22 +38,45 @@ exp.listen(PORT, '0.0.0.0', 0, () => {
 });
 
 exp.get('/', (req, res) => {
-    res.send("Welcome to BuzzBasket! Tell us what baskets you're looking for?");
+    res.send("Welcome to BuzzBasket!");
 });
 
+// Endpoint checkOptions takes in some general consumable title like Coffee or Bakery and returns 2 local options at random
 exp.post('/checkOptions',(req,res) => {
-    var consumable = "Coffee";// req.url.split('/order/')[1]
-    var options = [];
-    database.ref('/' + consumable).once('value', function(snapshot) {
-        snapshot.forEach(function(childSnapshot) {
+    var consumable: String|undefined = req.url.split('order=')[1].toLowerCase()
+    var options: String[] = [];
+    database.ref('/consumables/' + consumable).once('value', (snapshot) => {
+        snapshot.forEach((childSnapshot) => {
             var childData = childSnapshot.val();
             options.push(childData.place);
             console.log(childData);
         })
+        if (options.length == 0) {
+            res.send("We don't seem to have any vendors for " + consumable);
+        }
+        var option1 = shuffle(options)[0];
+        var option2 = shuffle(options)[0];
+        res.send("This month, we have " + consumable + " baskets from " +  option1 + " or " + option2 + ".");
     })
-    var option1 = shuffle(options)[0];
-    var option2 = shuffle(options)[0];
-    res.send("This month, we have coffee baskets from " +  option1 + " or " + option2 + ".");
+})
+
+exp.post('/detailQuery', (req,res) => {
+    var location: String|undefined = req.url.split('order=')[1]
+    database.ref('/' + location).once('value', (snapshot) => {
+        console.log(snapshot.price);
+        res.send(location + " seems to have a " + snapshot.price + " box for this month.")
+    })
+})
+
+// Experimental endpoint for putting up data.
+exp.get('/postData', (req, res) => {
+    database.ref('/consumables/bakery').set([
+            { place: "Highland Bakery"},
+            { place: "Sugar Mill Inc"},
+            { place: "Panera"},
+            { place: "Baby Cakes Bakery"}
+        ]
+    )
 })
 
 exp.post('/sms', (req, res) => {
