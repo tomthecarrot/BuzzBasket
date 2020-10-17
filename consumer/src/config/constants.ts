@@ -1,4 +1,4 @@
-export const PORT: string = process.env.BUZZBASKET_PORT || "4000";
+export const PORT: number = parseInt(process.env.BUZZBASKET_PORT || "4000");
 export const twilioAccountSid: string|undefined = process.env.BUZZBASKET_TWILIO_ACCOUNT_SID;
 export const twilioAuthToken: string|undefined = process.env.BUZZBASKET_TWILIO_AUTH_TOKEN;
 
