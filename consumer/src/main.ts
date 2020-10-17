@@ -6,6 +6,23 @@ import express from 'express';
 import twilio from 'twilio';
 import { PORT, defaultRecipient, merchantName, twilioAccountSid, twilioAuthToken } from './config/constants';
 
+// Firebase
+var firebase = require("firebase");
+
+var firebaseConfig = {
+    apiKey: "AIzaSyCUTUfJqRu_1LzZM56Tko5yha1SgwICIT8",
+    authDomain: "buzzbotstore.firebaseapp.com",
+    databaseURL: "https://buzzbotstore.firebaseio.com",
+    projectId: "buzzbotstore",
+    storageBucket: "buzzbotstore.appspot.com",
+    messagingSenderId: "46608851551",
+    appId: "1:46608851551:web:d6e73c14546acada8271ea",
+    measurementId: "G-WLL541SSP0"
+  };
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+var database = firebase.database();
+
 // Twilio
 const tw = twilio(twilioAccountSid, twilioAuthToken);
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
@@ -21,8 +38,23 @@ exp.listen(PORT, '0.0.0.0', 0, () => {
 });
 
 exp.get('/', (req, res) => {
-    res.send("Welcome to BuzzBasket!");
+    res.send("Welcome to BuzzBasket! Tell us what baskets you're looking for?");
 });
+
+exp.post('/checkOptions',(req,res) => {
+    var consumable = "Coffee";// req.url.split('/order/')[1]
+    var options = [];
+    database.ref('/' + consumable).once('value', function(snapshot) {
+        snapshot.forEach(function(childSnapshot) {
+            var childData = childSnapshot.val();
+            options.push(childData.place);
+            console.log(childData);
+        })
+    })
+    var option1 = shuffle(options)[0];
+    var option2 = shuffle(options)[0];
+    res.send("This month, we have coffee baskets from " +  option1 + " or " + option2 + ".");
+})
 
 exp.post('/sms', (req, res) => {
     const inbound = req.body.Body;
@@ -62,4 +94,18 @@ function buzzSendConf(itemName: string): void {
 
 function buzzParse(inbound: string): string {
     return `You said ${inbound}`;
+}
+
+function shuffle(array) {
+    var currentIndex = array.length, temporaryValue, randomIndex;
+  
+    while (0 !== currentIndex) {
+      randomIndex = Math.floor(Math.random() * currentIndex);
+      currentIndex -= 1;
+      temporaryValue = array[currentIndex];
+      array[currentIndex] = array[randomIndex];
+      array[randomIndex] = temporaryValue;
+    }
+  
+    return array;
 }
