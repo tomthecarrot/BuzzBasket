@@ -8,10 +8,13 @@ import { PORT, defaultRecipient, merchantName, twilioAccountSid, twilioAuthToken
 
 // Twilio
 const tw = twilio(twilioAccountSid, twilioAuthToken);
+const MessagingResponse = require('twilio').twiml.MessagingResponse;
+const bodyParser = require('body-parser');
 
 // Express
 const exp = express();
-exp.use(express.json());
+// exp.use(express.json());
+exp.use(bodyParser.urlencoded({ extended: false }));
 
 exp.listen(PORT, '0.0.0.0', 0, () => {
     console.log(`Server is listening on port ${PORT}`);
@@ -19,6 +22,19 @@ exp.listen(PORT, '0.0.0.0', 0, () => {
 
 exp.get('/', (req, res) => {
     res.send("Welcome to BuzzBasket!");
+});
+
+exp.post('/sms', (req, res) => {
+    const inbound = req.body.Body;
+    const outbound = buzzParse(inbound);
+    const twiml = new MessagingResponse();
+    twiml.message(outbound);
+    res.send(twiml.toString());
+});
+
+exp.post('/voice', (req, res) => {
+    console.log(req);
+    res.send("TODO");
 });
 
 exp.get('/order*', (req, res) => {
@@ -29,6 +45,10 @@ exp.get('/order*', (req, res) => {
     }
     res.send(`Ordered ${itemName}! Sending a confirmation text message...`);
 
+    buzzSendConf(itemName);
+});
+
+function buzzSendConf(itemName: string): void {
     let message: string = `Thanks for ordering ${itemName}! We appreciate your business. - ${merchantName}`;
     console.log(message);
     tw.messages.create({
@@ -38,4 +58,8 @@ exp.get('/order*', (req, res) => {
     }).then(message => {
         console.log(message.sid);
     });
-});
+}
+
+function buzzParse(inbound: string): string {
+    return `You said ${inbound}`;
+}
