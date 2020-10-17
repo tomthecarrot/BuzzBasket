@@ -10,6 +10,8 @@ import {
     phraseInputs, phraseOutputs
 } from './config/constants';
 
+var currentItemName: string = "nothing";
+
 // Twilio
 const tw = twilio(twilioAccountSid, twilioAuthToken);
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
@@ -39,7 +41,7 @@ exp.post('/sms', (req, res) => {
 
 exp.post('/voice', (req, res) => {
     const twiml = new VoiceResponse();
-    twiml.say({ voice: 'alice' }, `Thanks for calling BuzzBasket! Please text us to order something new from ${merchantName}. Have a great day.`);
+    twiml.say({ voice: 'alice' }, `Thanks for calling BuzzBasket! Please text us to order something new from ${merchantName}. We're also working on your order for ${currentItemName}. Have a great day.`);
     
     // res.type('text/xml');
     res.send(twiml.toString());
@@ -94,7 +96,9 @@ function buzzParse(inbound: string): string {
     }
 
     if (mainDirective == "order") {
-        return `Ordering ${name.join(' ')}.`;
+        const nameStr: string = name.join(' ');
+        currentItemName = nameStr;
+        return `Ordering ${nameStr}.`;
     }
 
     if (mainDirective != null) {
