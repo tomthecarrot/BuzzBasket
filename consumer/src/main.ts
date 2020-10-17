@@ -87,8 +87,7 @@ exp.get('/postData', (req, res) => {
 });
 
 exp.post('/sms', (req, res) => {
-    console.log(req.body);
-    const phoneNumber: string = "-1";
+    const phoneNumber: string = req.body.From;
     const inbound = req.body.Body;
     const outbound = buzzParse(phoneNumber, inbound);
     const response = new MessagingResponse();
@@ -100,7 +99,7 @@ exp.post('/sms', (req, res) => {
 
 exp.post('/voice', (req, res) => {
     const twiml = new VoiceResponse();
-    const phoneNumber: string = "-1";
+    const phoneNumber: string = req.body.From;
     const currentItemName: string|undefined = currentItemNames.get(phoneNumber);
     const orderStatusMsg: string = currentItemName == undefined ? "" : `We're also working on your order for ${currentItemName}.`;
     twiml.say({ voice: 'alice' }, `Thanks for calling BuzzBasket! Please text us to order something new from ${merchantName}. ${orderStatusMsg} Have a great day.`);
