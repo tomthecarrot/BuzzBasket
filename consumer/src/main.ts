@@ -4,11 +4,16 @@
 
 import express from 'express';
 import twilio from 'twilio';
-import { PORT, defaultRecipient, merchantName, twilioAccountSid, twilioAuthToken } from './config/constants';
+import {
+    PORT, defaultRecipient, merchantName,
+    twilioAccountSid, twilioAuthToken,
+    phraseInputs, phraseOutputs
+} from './config/constants';
 
 // Twilio
 const tw = twilio(twilioAccountSid, twilioAuthToken);
 const MessagingResponse = require('twilio').twiml.MessagingResponse;
+const VoiceResponse = require('twilio').twiml.VoiceResponse;
 const bodyParser = require('body-parser');
 
 // Express
@@ -33,8 +38,11 @@ exp.post('/sms', (req, res) => {
 });
 
 exp.post('/voice', (req, res) => {
-    console.log(req);
-    res.send("TODO");
+    const twiml = new VoiceResponse();
+    twiml.say({ voice: 'alice' }, `Thanks for calling BuzzBasket! Please text us to order something new from ${merchantName}. Have a great day.`);
+    
+    // res.type('text/xml');
+    res.send(twiml.toString());
 });
 
 exp.get('/order*', (req, res) => {
@@ -61,5 +69,40 @@ function buzzSendConf(itemName: string): void {
 }
 
 function buzzParse(inbound: string): string {
-    return `You said ${inbound}`;
+    var name: string[] = [];
+    var naming: boolean = false;
+    var mainDirective: string|undefined = undefined;
+    const tokens: string[] = inbound.split(' ');
+    for (var i = 0; i < tokens.length; i++) {
+        const phraseDirective: string | undefined = phraseInputs.get(tokens[i]);
+        if (naming && phraseDirective == undefined && (mainDirective == "order" || mainDirective == "recommend")) {
+            name.push(tokens[i]);
+        } else {
+            naming = false;
+        }
+        if (phraseDirective == "hello") {
+            if (mainDirective == undefined) {
+                mainDirective = phraseDirective;
+            }
+        } else if (phraseDirective == "order") {
+            naming = true;
+            mainDirective = phraseDirective;
+        } else if (phraseDirective == "recommend") {
+            naming = true;
+            mainDirective = phraseDirective;
+        }
+    }
+
+    if (mainDirective == "order") {
+        return `Ordering ${name.join(' ')}.`;
+    }
+
+    if (mainDirective != null) {
+        const phraseOutput: string|undefined = phraseOutputs.get(mainDirective);
+        if (phraseOutput != undefined) {
+            return phraseOutput;
+        }
+    }
+    
+    return `You said ${inbound}`; // echo
 }
