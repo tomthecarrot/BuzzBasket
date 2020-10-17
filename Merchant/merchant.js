@@ -1,6 +1,10 @@
 const l = require("@samr28/log")
 l.on()
 l.date(false)
+l.setColors({
+  post: "green",
+  get: "green"
+});
 
 const express = require('express')
 var bodyParser = require('body-parser')
@@ -13,6 +17,7 @@ const redis = new Redis()
 
 const id = require('./id')
 id.setRedis(redis)
+const ncr = require('./ncr')
 
 redis.on('connect', async () => {
   l.log('DB Connected', "INFO")
@@ -58,8 +63,19 @@ app.get('/inv', async (req, res) => {
   res.send(inv)
 })
 
-app.get('/orders', async (req, res) => {
-  
+// Get all possible baskets
+app.get('/baskets', async (req, res) => {
+  l.log("baskets", "get")
+  let out = await ncr.getCatalog()
+  res.send(JSON.stringify(out))
+})
+
+// Order basket
+app.post('/order', jsonParser, async (req, res) => {
+  let itemId = req.body.itemId
+  l.log(`order ${itemId}`, "post")
+  let out = await ncr.placeOrder(itemId)
+  res.send(204)
 })
 
 app.listen(port, () => {
