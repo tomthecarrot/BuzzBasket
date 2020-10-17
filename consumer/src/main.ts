@@ -34,9 +34,11 @@ exp.get('/', (req, res) => {
 exp.post('/sms', (req, res) => {
     const inbound = req.body.Body;
     const outbound = buzzParse(inbound);
-    const twiml = new MessagingResponse();
-    twiml.message(outbound);
-    res.send(twiml.toString());
+    const response = new MessagingResponse();
+    const message = response.message();
+    message.body(outbound);
+    // message.media('https://tomthecarrot.com/buzz.jpg');
+    res.send(message.toString());
 });
 
 exp.post('/voice', (req, res) => {
@@ -76,7 +78,7 @@ function buzzParse(inbound: string): string {
     var mainDirective: string|undefined = undefined;
     const tokens: string[] = inbound.split(' ');
     for (var i = 0; i < tokens.length; i++) {
-        const phraseDirective: string | undefined = phraseInputs.get(tokens[i]);
+        const phraseDirective: string | undefined = phraseInputs.get(tokens[i].toLowerCase());
         if (naming && phraseDirective == undefined && (mainDirective == "order" || mainDirective == "recommend")) {
             name.push(tokens[i]);
         } else {

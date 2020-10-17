@@ -14,6 +14,7 @@ export const phraseInputs: Map<string, string> = new Map([
     ["find", "order"],
     ["eat", "order"],
     ["have", "order"],
+    ["want", "order"],
     ["try", "order"],
     ["please", "please"],
     ["pls", "please"],
