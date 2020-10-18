@@ -1,0 +1,37 @@
+{
+  "name": "buzzbasket",
+  "version": "1.0.0",
+  "description": "HackGT 7 project",
+  "main": "dist/main.js",
+  "scripts": {
+    "start:dev": "nodemon dist/main.js",
+    "build:dev": "tsc --watch --preserveWatchOutput",
+    "dev": "concurrently \"npm:build:dev\" \"npm:start:dev\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tomthecarrot/BuzzBasket.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/tomthecarrot/BuzzBasket/issues"
+  },
+  "homepage": "https://github.com/tomthecarrot/BuzzBasket#readme",
+  "dependencies": {
+    "@types/firebase": "^3.2.1",
+    "@types/twilio": "^2.11.0",
+    "axios": "^0.20.0",
+    "body-parser": "^1.19.0",
+    "dotenv": "^8.2.0",
+    "express": "^4.17.1",
+    "firebase": "^7.24.0",
+    "firebase-admin": "^9.2.0",
+    "twilio": "^3.50.0"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.8",
+    "concurrently": "^5.3.0",
+    "nodemon": "^2.0.5"
+  }
+}
