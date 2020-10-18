@@ -141,12 +141,15 @@ function buzzSend(phoneNumber: string, message: string, mediaUrl: string|undefin
 
 function buzzParse(phoneNumber: string, inbound: string): string {
     var name: string[] = [];
+    var itemMasterId: string = "";
     var mainDirective: string|undefined = undefined;
 
     const items = recommendedItems.get(phoneNumber);
     if (items != undefined) {
         const chosenOption = parseInt(inbound) || 1;
-        name = [items[chosenOption - 1].name];
+        const item = items[chosenOption - 1];
+        name = [item.name];
+        itemMasterId = item.itemMasterId;
         mainDirective = "order";
         recommendedItems.set(phoneNumber, undefined);
     }
@@ -179,7 +182,7 @@ function buzzParse(phoneNumber: string, inbound: string): string {
 
     if (mainDirective == "order") {
         const nameStr: string = name.join(' ');
-        order(phoneNumber, nameStr);
+        order(phoneNumber, itemMasterId);
         return `We ordered ${nameStr} for you! We'll contact you at ${phoneNumber} when your order is ready. Thanks for shopping with BuzzBasket! Buzz Buzz 🐝 🧺`;
     }
     else if (mainDirective == "recommend") {
@@ -201,21 +204,20 @@ function buzzParse(phoneNumber: string, inbound: string): string {
 function order(phoneNumber: string, itemName: string): void {
     currentItemNames.set(phoneNumber, itemName);
     axios.post("http://localhost:3000/order", {
-        itemId: itemName
+        itemMasterId: itemName
     });
 }
 
 async function recommend(phoneNumber: string, itemType: string): Promise<void> {
     const resp = await axios.get("http://localhost:3000/baskets");
-    const baskets = JSON.parse(resp.data);
-    const basket = baskets[random(baskets.length)];
+    const baskets = resp.data;
 
-    recommendedItems.set(phoneNumber, basket);
+    recommendedItems.set(phoneNumber, baskets);
 
     var i = 1;
-    basket.forEach((item: any) => {
-        const message = `${i}: ${item.name} $${item.price}`;
-        const mediaUrl: string = `https://tomthecarrot.com/projects/buzzbasket/items/${item.itemId}.jpg`;
+    baskets.forEach((item: any) => {
+        const message = `${i}: ${item.name} $${item.cost}`;
+        const mediaUrl: string = `https://tomthecarrot.com/projects/buzzbasket/items/${item.itemMasterId}.jpg`;
         buzzSend(phoneNumber, message, mediaUrl);
 
         i += 1;
