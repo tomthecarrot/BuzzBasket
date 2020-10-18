@@ -15,9 +15,7 @@ const port = 3000
 const Redis = require('ioredis')
 const redis = new Redis()
 
-const id = require('./id')
-id.setRedis(redis)
-const ncr = require('./ncr')
+const silver = require('./silver')
 
 redis.on('connect', async () => {
   l.log('DB Connected', "INFO")
@@ -31,42 +29,24 @@ redis.on('connect', async () => {
 })
 
 app.get('/', (req, res) => {
-  client.get("inv", (err, reply) => {
-    if (err) throw err
-    res.send(reply.toString())
-  })
+  res.send("PONG")
 })
 
-app.get('/reset', async (req, res) => {
-  await redis.set("inv", JSON.stringify([]))
-  await redis.set("currId", 0)
-  res.send("INV CLEAR")
-})
-
-app.post('/add', jsonParser, async(req, res) => {
-  body = req.body
-  i = await id.gen()
-  l.log(`ADD ITEM: ${body.name}:${body.qty} (id: ${i})`, "INFO")
-  body.id = i
-
-  let inv = JSON.parse(await redis.get("inv"))
-  inv.push(body)
-  console.log(inv)
-  await redis.set("inv", JSON.stringify(inv), (err) => {
-    if (err) l.log(err, "ERROR")
-  })
-  res.send(inv)
-})
-
-app.get('/inv', async (req, res) => {
-  let inv = JSON.parse(await redis.get("inv"))
-  res.send(inv)
+app.get('/basketplanner', async (req, res) => {
+  l.log("basketplanner", "get")
+  let out = await silver.recommendBox()
+  res.send(out)
 })
 
 // Get all possible baskets
 app.get('/baskets', async (req, res) => {
   l.log("baskets", "get")
-  let out = await ncr.getCatalog()
+  // let out = await ncr.getCatalog()
+  let out = [
+    {itemId: 0, name: "October Spooky Coffee Basket", price: 68.98},
+    {itemId: 1, name: "Coffee Gift Basket", price: 44.99},
+    {itemId: 2, name: "Enthusiast Coffee Basket", price: 55.96}
+  ]
   res.send(JSON.stringify(out))
 })
 
@@ -74,7 +54,7 @@ app.get('/baskets', async (req, res) => {
 app.post('/order', jsonParser, async (req, res) => {
   let itemId = req.body.itemId
   l.log(`order ${itemId}`, "post")
-  let out = await ncr.placeOrder(itemId)
+  let out = await silver.placeOrder(itemId)
   res.send(204)
 })
 
