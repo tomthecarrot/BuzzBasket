@@ -194,13 +194,38 @@ function order(phoneNumber: string, itemName: string): void {
 }
 
 async function recommend(phoneNumber: string, itemType: string): Promise<void> {
-    axios.post("http://localhost:3000/recommend", {
-        itemType: itemType
-    });
+    // const items = await axios.post("http://localhost:3000/recommend", {
+    //     itemType: itemType
+    // });
 
-    const message = "1 - Buzz Coffee";
-    const mediaUrl: string = "https://tomthecarrot.com/buzz.jpg";
-    buzzSend(phoneNumber, message, mediaUrl);
+    // TODO get from Sam's server
+    const items = [
+        {
+            "itemId": 0,
+            "name": "Buzz Roast"
+        },
+        {
+            "itemId": 2906847,
+            "name": "Cafe Du Monde Whole Bean"
+        },
+        // {
+        //     "itemId": 2906842,
+        //     "name": "Kicking Horse Coffee"
+        // },
+        // {
+        //     "itemId": 2906844,
+        //     "name": "Lavazza Super Crema Whole Bean Coffee Blend"
+        // }
+    ];
+
+    var i = 1;
+    items.forEach(item => {
+        const message = `${i}: ${item.name}`;
+        const mediaUrl: string = `https://tomthecarrot.com/projects/buzzbasket/items/${item.itemId}.jpg`;
+        buzzSend(phoneNumber, message, mediaUrl);
+
+        i += 1;
+    });
 }
 
 function shuffle(array: String[]) {
