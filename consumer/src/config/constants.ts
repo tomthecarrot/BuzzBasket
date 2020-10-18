@@ -18,9 +18,22 @@ export const phraseInputs: Map<string, string> = new Map([
     ["try", "order"],
     ["please", "please"],
     ["pls", "please"],
-    ["plz", "please"]
+    ["plz", "please"],
+    ["plzz", "please"],
+    ["recommend", "recommend"],
+    ["recomend", "recommend"],
+    ["look", "recommend"],
+    ["looking", "recommend"],
+    ["for", "recommend"],
+    ["seeking", "recommend"],
+    ["find", "recommend"],
+    ["thank", "thanks"],
+    ["you", "thanks"],
+    ["thankyou", "thanks"],
+    ["cheers", "thanks"]
 ]);
 
 export const phraseOutputs: Map<string, string> = new Map([
-    ["hello", "Hello! Welcome to BuzzBasket. What shall we find for your basket today?"],
+    ["hello", "Hello! Welcome to BuzzBasket 🐝. What shall we find for your basket 🧺 today?"],
+    ["thanks", "You're welcome! Have a great day ✨"]
 ]);

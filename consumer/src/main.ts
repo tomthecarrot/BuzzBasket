@@ -93,7 +93,6 @@ exp.post('/sms', (req, res) => {
     const response = new MessagingResponse();
     const message = response.message();
     message.body(outbound);
-    // message.media('https://tomthecarrot.com/buzz.jpg');
     res.send(message.toString());
 });
 
@@ -118,16 +117,22 @@ exp.get('/order*', (req, res) => {
     order("0", itemName);
 
     res.send(`Ordered ${itemName}! Sending a confirmation text message...`);
-    buzzSendConf(itemName);
+
+    let message: string = `Thanks for ordering ${itemName}! We appreciate your business. - ${merchantName}`;
+    buzzSend(defaultRecipient, message, undefined);
 });
 
-function buzzSendConf(itemName: string): void {
-    let message: string = `Thanks for ordering ${itemName}! We appreciate your business. - ${merchantName}`;
-    console.log(message);
+exp.get('/recommend', (req, res) => {
+    recommend(defaultRecipient, "espresso");
+    res.send("Continuing the recommendation on mobile. Sending a text message...");
+});
+
+function buzzSend(phoneNumber: string, message: string, mediaUrl: string|undefined): void {
     tw.messages.create({
         body: message,
+        mediaUrl: mediaUrl,
         from: '+16086802899',
-        to: defaultRecipient
+        to: phoneNumber
     }).then(message => {
         console.log(message.sid);
     });
@@ -155,13 +160,20 @@ function buzzParse(phoneNumber: string, inbound: string): string {
         } else if (phraseDirective == "recommend") {
             naming = true;
             mainDirective = phraseDirective;
+        } else if (phraseDirective == "thanks") {
+            mainDirective = phraseDirective;
         }
     }
 
     if (mainDirective == "order") {
         const nameStr: string = name.join(' ');
         order(phoneNumber, nameStr);
-        return `Ordering ${nameStr}.`;
+        return `We ordered ${nameStr} for you! We'll contact you at ${phoneNumber} when your order is ready. Thanks for shopping with BuzzBasket! Buzz Buzz 🐝 🧺`;
+    }
+    else if (mainDirective == "recommend") {
+        const typeStr: string = name.join(' ');
+        recommend(phoneNumber, typeStr);
+        return "Cool! Time for some recommendations. Let us know which item # looks most appetizing:";
     }
 
     if (mainDirective != null) {
@@ -179,6 +191,16 @@ function order(phoneNumber: string, itemName: string): void {
     axios.post("http://localhost:3000/order", {
         itemId: itemName
     });
+}
+
+async function recommend(phoneNumber: string, itemType: string): Promise<void> {
+    axios.post("http://localhost:3000/recommend", {
+        itemType: itemType
+    });
+
+    const message = "1 - Buzz Coffee";
+    const mediaUrl: string = "https://tomthecarrot.com/buzz.jpg";
+    buzzSend(phoneNumber, message, mediaUrl);
 }
 
 function shuffle(array: String[]) {
