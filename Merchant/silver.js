@@ -5,7 +5,7 @@ const axios = require("axios")
 
 const clientId = "AST00004514"
 const clientSecret = "YYtcjaEa7W16H8bUwWNCocJCmeFzwFuxk2T0pDfZBLSVDNLHAffd5cHgsplLO52ipBkfaOifjPp3tSfjmUhZIwff"
-const token = "gAAAAJ5GpkO6tPyePWRkfUnKQw4QWM01DCcdMTns-YoqsVv-ZHV7yVmXx37LErOzW0LucPsJtNQtRZJx2LrB3DKbYscqPnkZ7AY1xz7eUIF60KrCNMxm4sXQWS3ctv2nYA8miAg5MpIUbIabb76fLc7qvHrxSARQLgjyz-rCcJA6Be7W9AAAAIAAAAA_KJL4q_sxensuGzXEWXdKdqVOEMwpV3UFaKGxT7_yDPlGexp_lTZRia4nmSUitawe615gb6it3I5E_3B8mjh7f9rJUfEy1wXQ8m8Gl3PG8nP7BfjIFHzM21S3_ZHEAzch5Fy-cZcbcsdZ29v0hUhmpIaNpzfSrlqWxhT4m1HGpoQxdMG9YL7H3_5I9wHZzZ9lhUvIfkb1Ih3gZwJBCRzeU29L5TmlGUvlg-HJAoNuCkrsI0zHcfzCbRehez37gKNO9qTId5gtAf0FY-aFZCx5Gw2twtY02LVyHNsKN7GMIBaA6w7xVxbbDj0f-DXUFnQ"
+const token = "gAAAAIuECC7b8uGnLJeU6zdFZbVa8Vy2Xr6zQa-YkhV7y-M9D1_v4XiOiC8qtX225m8s0aWSpfekJf4gomcojrsydmyrhP3YhseZK6ykqeKz14KvqmlusBmTNV2OG1Iqb9VjjTnPbjMstU5cAislZ59ig6QnkMBreXBKqDdG6X3lTDn09AAAAIAAAAA8QxOsqFf9l-NnRTkKbOl-DhSxMlSW21PwGsabkU_DXFn1HrQQxuX7INB6npjL7_f2SB4AOtW9CIhEMRxBMq5OeEXebi_xQjWfFryWub_OE9u-345p_XdOwcGIfeXa8Te9SSHQFaP0RQDj6kfk7CsbgwwVl7UCK2PN533BFkYVmsuwBXeZXHPTHA7IRhJ8CZsublIan0XJOzLrej4x5HNxJyTkYHAx4EoHZEgochsDlbp-gRvJxeHaSmYdcjXRVPS-oYkladuzIiK83Mh1xqGYVeuXOyleenwUJQ9hGKiM3nlYhb0jFWPDxXgVEP9qRq0"
 
 const headers = {
     Authorization: `Bearer ${token}`,
@@ -36,17 +36,33 @@ const getInventory = async () => {
     return items
 }
 
-const getItemPrice = async (itemMasterId) => {
-    l.log("Get item price", "info")
+const getItem = async (itemMasterId) => {
     const params = {
         item_master_id: itemMasterId
     }
     const item = await axios.get(`${host}/v2/inventory/items/item`, { headers: headers, params: params })
     if (!item || !item.data || !item.data.Result) {
-        l.log("Unable to get price", "error")
-        return 0
+        l.log("Unable to get item", "error")
+        console.log(item)
+        return {}
     }
-    return item.data.Result.RetailPrice
+    return item.data.Result
+}
+
+const getItemForOrder = async (itemMasterId) => {
+    l.log(`Get item for order (masterId: ${itemMasterId})`, "info")
+    let item = await getItem(itemMasterId)
+    return {
+        ItemId: item.ItemVariations[0].ItemId,
+        ItemName: item.Name,
+        Quantity: 1
+    }
+}
+
+const getItemPrice = async (itemMasterId) => {
+    l.log(`Get item price (masterId: ${itemMasterId})`, "info")
+    let item = await getItem(itemMasterId)
+    return item.RetailPrice
 }
 
 module.exports = {
@@ -73,12 +89,34 @@ module.exports = {
             totalCost: 58.94
         }
     },
-    placeOrder: async (item) => {
+    placeOrder: async (itemMasterId) => {
         l.log("Place order", "info")
-        // const order = {
-        //     "Orders": 
-        // }
-        const res = await axios.post(`${host}/v2/orders`, order, { headers: headers })
+        let item = await getItemForOrder(itemMasterId)
+        const order = {
+            Orders: [
+              {
+                IsClosed: false,
+                OrderNumber: "12346",
+                OrderDateTime: "2020-10-17T18:24:14.049Z",
+                OrderDueDateTime: "2020-10-17T18:24:14.049Z",
+                IsPaid: true,
+                LineItems: [ item ]
+              }
+            ],
+            SourceApplicationName: "string"
+          }
+        const params = {
+            store_number: 1,
+            api_store_id: 1
+        }
+        const res = await axios.post(`${host}/v2/orders`, order, { headers: headers, params: params })
+        if (!res || !res.data || !res.data.IsSuccessful) {
+            l.log("Order -> NCR Silver", "error")
+            console.log(res)
+        } else {
+            l.log("Order -> NCR", "success")
+            return true
+        }
     },
     getBaskets: async () => {
         l.log("Get baskets", "info")
