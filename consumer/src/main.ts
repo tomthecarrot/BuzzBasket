@@ -13,6 +13,7 @@ import {
 } from './config/constants';
 
 var currentItemNames: Map<string, string> = new Map<string, string>();
+var recommendedItems: Map<string, any> = new Map<string, any>();
 
 // Firebase
 var firebaseConfig = {
@@ -140,28 +141,39 @@ function buzzSend(phoneNumber: string, message: string, mediaUrl: string|undefin
 
 function buzzParse(phoneNumber: string, inbound: string): string {
     var name: string[] = [];
-    var naming: boolean = false;
     var mainDirective: string|undefined = undefined;
-    const tokens: string[] = inbound.split(' ');
-    for (var i = 0; i < tokens.length; i++) {
-        const phraseDirective: string | undefined = phraseInputs.get(tokens[i].toLowerCase());
-        if (naming && phraseDirective == undefined && (mainDirective == "order" || mainDirective == "recommend")) {
-            name.push(tokens[i]);
-        } else {
-            naming = false;
-        }
-        if (phraseDirective == "hello") {
-            if (mainDirective == undefined) {
+
+    const items = recommendedItems.get(phoneNumber);
+    if (items != undefined) {
+        const chosenOption = parseInt(inbound) || 1;
+        name = [items[chosenOption - 1].name];
+        mainDirective = "order";
+        recommendedItems.set(phoneNumber, undefined);
+    }
+    else {
+        var naming: boolean = false;
+        const tokens: string[] = inbound.split(' ');
+
+        for (var i = 0; i < tokens.length; i++) {
+            const phraseDirective: string | undefined = phraseInputs.get(tokens[i].toLowerCase());
+            if (naming && phraseDirective == undefined && (mainDirective == "order" || mainDirective == "recommend")) {
+                name.push(tokens[i]);
+            } else {
+                naming = false;
+            }
+            if (phraseDirective == "hello") {
+                if (mainDirective == undefined) {
+                    mainDirective = phraseDirective;
+                }
+            } else if (phraseDirective == "order") {
+                naming = true;
+                mainDirective = phraseDirective;
+            } else if (phraseDirective == "recommend") {
+                naming = true;
+                mainDirective = phraseDirective;
+            } else if (phraseDirective == "thanks") {
                 mainDirective = phraseDirective;
             }
-        } else if (phraseDirective == "order") {
-            naming = true;
-            mainDirective = phraseDirective;
-        } else if (phraseDirective == "recommend") {
-            naming = true;
-            mainDirective = phraseDirective;
-        } else if (phraseDirective == "thanks") {
-            mainDirective = phraseDirective;
         }
     }
 
@@ -194,38 +206,24 @@ function order(phoneNumber: string, itemName: string): void {
 }
 
 async function recommend(phoneNumber: string, itemType: string): Promise<void> {
-    // const items = await axios.post("http://localhost:3000/recommend", {
-    //     itemType: itemType
-    // });
+    const resp = await axios.get("http://localhost:3000/baskets");
+    const baskets = JSON.parse(resp.data);
+    const basket = baskets[random(baskets.length)];
 
-    // TODO get from Sam's server
-    const items = [
-        {
-            "itemId": 0,
-            "name": "Buzz Roast"
-        },
-        {
-            "itemId": 2906847,
-            "name": "Cafe Du Monde Whole Bean"
-        },
-        // {
-        //     "itemId": 2906842,
-        //     "name": "Kicking Horse Coffee"
-        // },
-        // {
-        //     "itemId": 2906844,
-        //     "name": "Lavazza Super Crema Whole Bean Coffee Blend"
-        // }
-    ];
+    recommendedItems.set(phoneNumber, basket);
 
     var i = 1;
-    items.forEach(item => {
-        const message = `${i}: ${item.name}`;
+    basket.forEach((item: any) => {
+        const message = `${i}: ${item.name} $${item.price}`;
         const mediaUrl: string = `https://tomthecarrot.com/projects/buzzbasket/items/${item.itemId}.jpg`;
         buzzSend(phoneNumber, message, mediaUrl);
 
         i += 1;
     });
+}
+
+function random(max: number): number {
+    return Math.floor(Math.random() * max);
 }
 
 function shuffle(array: String[]) {
