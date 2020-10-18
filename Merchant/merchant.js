@@ -2,8 +2,8 @@ const l = require("@samr28/log")
 l.on()
 l.date(false)
 l.setColors({
-  post: "green",
-  get: "green"
+  post: "magenta",
+  get: "magenta"
 });
 
 const express = require('express')
@@ -33,11 +33,10 @@ app.get('/baskets', async (req, res) => {
 
 // Order basket
 app.post('/order', jsonParser, async (req, res) => {
-  let itemId = req.body.itemId
+  let itemId = req.body.itemMasterId
   l.log(`order ${itemId}`, "post")
   let out = await silver.placeOrder(itemId)
-  console.log(out)
-  res.send(204)
+  res.send(out)
 })
 
 app.listen(port, () => {
